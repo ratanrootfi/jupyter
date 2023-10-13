@@ -1,0 +1,174 @@
+{
+    "cells": [
+        {
+            "language": "markdown",
+            "source": [
+                "### Install Modules"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "powershell",
+            "source": [
+                "# npm i axios\n# npm i --save-dev @types/node"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "javascript",
+            "source": [
+                "const API_KEY  = \"w7qR6kqLlARpnqgD45VeszVo3nW2\"\nconst company_id = 28\nconst ROOTFI_SYNCING = \"http://localhost:8080\""
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Test 1: Check Proper Response"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "\n// Read\n\nimport axios from \"axios\"\n// API EndPoint\n// const data = await axios.get(ROOTFI_SYNCING+\"/accounting/accounts\",{\n//     headers: {\n//         api_key:API_KEY,\n//         \"Accept\":\"application/json\",\n//     },\n//     params:{\n//         take:1\n//     }\n// })\n\n// const response = data.data.data.data.length\n// console.log(response)\n\n\n// SDK Endpoint\nconst data = await axios.post(ROOTFI_SYNCING+\"/accounting/accounts/all\",{take:1},{\n    headers: {\n        api_key:API_KEY,\n        \"Accept\":\"application/json\",\n    },\n})\n\nconst response = data.data.data.data\nconsole.log({response_lenght:response.length})"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "{ response_lenght: 1 }",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Check Write Response"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "let accountsWriteRequestBody:any = {\n    \"company_id\": 28,\n    \"data\": [\n        {\n            \"name\": \"Rootfi Test 5455\",\n            \"description\": \"Rootfi Test Desc\",\n            \"nominal_code\": \"T0123\",\n            \"currency_id\": \"INR\",\n            \"sub_category\": \"long_term_liability\"\n        }\n    ]\n}\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n\nconst data = await axios.post(\n  ROOTFI_SYNCING + \"/accounting/accounts\",\n  {\n    ...accountsWriteRequestBody,\n  },\n  {\n    headers: {\n      api_key: API_KEY,\n      Accept: \"application/json\",\n    },\n  }\n);\nconsole.log(data.data.data.data[0][0].platform_id);\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "846d99af-6aa6-4095-a6e4-020731797068",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Failed Access Token: Error Code 401"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n      \ntry {\n  const data = await axios.post(\n      ROOTFI_SYNCING + \"/accounting/accounts\",\n      {\n        \"company_id\": 28,\n        \"data\": [\n            {\n                \"name\": \"Rootfi Test 5455\",\n                \"description\": \"Rootfi Test Desc\",\n                \"nominal_code\": \"T0123\",\n                \"currency_id\": \"INR\",\n                \"sub_category\": \"long_term_liability\",\n                \"throwError\": \"expireAccessToken\"\n            }\n        ]\n    },\n      {\n        headers: {\n          api_key: API_KEY,\n          Accept: \"application/json\",\n        }\n      }\n    )\n} catch (error) {\n  var assert = require('assert');\n  assert.ok(error.response.status === 401,\"Error: Status code is not 401\")\n  assert.ok(error.response.data.error.code === \"token-expired\",\"Error: Error code is not token-expired\")\n}"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Internal Error: Error Code 500"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n\ntry {\n  const data = await axios.post(\n    ROOTFI_SYNCING + \"/accounting/accounts\",\n    {\n      company_id: 28,\n      data: [\n        {\n          name: \"Rootfi Test 5455\",\n          throwError: \"throwInternalError\",\n        },\n      ],\n    },\n    {\n      headers: {\n        api_key: API_KEY,\n        Accept: \"application/json\",\n      },\n    }\n  );\n  console.log(data.data.data.data[0]);\n} catch (error) {\n  var assert = require(\"assert\");\n  assert.ok(error.response.status === 400, \"Error: Status code is not 400\");\n  assert.ok(error.response.data.error.code === \"invalid-params\", \"Error: Error code is not invalid-params\");\n}\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Blank Response: Error Code 200"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n\ntry {\n  const data = await axios.post(\n    ROOTFI_SYNCING + \"/accounting/accounts\",\n    {\n      company_id: 28,\n      data: [\n        {\n          name: \"Rootfi Test 5455\",\n          throwError: \"blankResponse\",\n        },\n      ],\n    },\n    {\n      headers: {\n        api_key: API_KEY,\n        Accept: \"application/json\",\n      },\n    }\n  );\n  console.log(data.data.data.data[0]);\n} catch (error) {\n  var assert = require(\"assert\");\n  assert.ok(error.response.status === 400, \"Error: Status code is not 400\");\n  assert.ok(error.response.data.error.code === \"invalid-params\", \"Error: Error code is not invalid-params\");\n}\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### Required Field Not Passed"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n\ntry {\n  const data = await axios.post(\n    ROOTFI_SYNCING + \"/accounting/accounts\",\n    {\n      company_id: 28,\n      data: [\n        {\n        },\n\n      ],\n    },\n    {\n      headers: {\n        api_key: API_KEY,\n        Accept: \"application/json\",\n      },\n    }\n  );\n  console.log(data.data.data.data[0]);\n} catch (error) {\n  var assert = require(\"assert\");\n  assert.ok(error.response.status === 400, \"Error: Status code is not 400\");\n  assert.ok(error.response.data.error.code === \"invalid_request-body\", \"Error: Error code is not invalid_request-body\");\n}\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### String Response: Error Code 200"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import axios from \"axios\";\n\ntry {\n  const data = await axios.post(\n    ROOTFI_SYNCING + \"/accounting/accounts\",\n    {\n      company_id: 28,\n      data: [\n        {\n          \"name\":\"Rootfi Test 5455\",\n          \"throwError\":\"stringResponse\"\n        },\n\n      ],\n    },\n    {\n      headers: {\n        api_key: API_KEY,\n        Accept: \"application/json\",\n      },\n    }\n  );\n  console.log(data.data.data.data[0]);\n} catch (error) {\n  var assert = require(\"assert\");\n  assert.ok(error.response.status === 400, \"Error: Status code is not 400\");\n  assert.ok(error.response.data.error.code === \"invalid-params\", \"Error: Error code is not invalid_request-body\");\n}\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "{",
+                                "  error: {",
+                                "    code: 'invalid-params',",
+                                "    message: 'Invalid field: Unknown. Internal Error'",
+                                "  },",
+                                "  request_timestamp: '2023-09-28T09:56:51.605Z',",
+                                "  response_timestamp: '2023-09-28T09:56:55.416Z',",
+                                "  request_id: '48d190c1-dc3a-4cda-8c13-cbdac95e0240'",
+                                "}",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
