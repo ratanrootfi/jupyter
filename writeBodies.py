@@ -7,28 +7,70 @@ DEFAULT_DATAMODEL_CONFIG = {  # these are the default values we use for the writ
         "sub_category": {
             "ZOHO_BOOKS": "long_term_liability",
             "ROOTFI_SANDBOX": "long_term_liability",
+            "XERO":"LIABILITY",
+            "QUICKBOOKS_SANDBOX":"CreditCard",
+            "SAGE_CLOUD_ACCOUNTING":"CURRENT_LIABILITY",
+            "WAFEQ":"CURRENT_LIABILITY"
         }
     },
     "BANK_ACCOUNTS": {
         "category": {
             "ZOHO_BOOKS": "credit_card",  # bank and credit card supported
+            "XERO":"BANK",
+            "QUICKBOOKS_SANDBOX":"CashOnHand",
+            "SAGE_CLOUD_ACCOUNTING":"CHECKING"
         }
     },
     "BANK_TRANSACTIONS": {
-        "type": {"ZOHO_BOOKS": "deposit"},
-        "raw_data": {"ZOHO_BOOKS": {"from_account_id": ""}},
+        "type": {"ZOHO_BOOKS": "deposit","XERO":"SPEND"},
+        "raw_data": {"ZOHO_BOOKS": {"from_account_id": ""},"XERO":{"from_account_id": ""}},
     },
     "INVOICE_PAYMENTS": {
-        "payment_mode": {"ZOHO_BOOKS": "cash"},
+        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC"},
     },
     "BILL_PAYMENTS": {
-        "payment_mode": {"ZOHO_BOOKS": "cash"},
+        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC"},
     },
     "ITEMS": {
-        "type": {"ZOHO_BOOKS": "INVENTORY"}
+        "type": {"ZOHO_BOOKS": "INVENTORY",
+                 "XERO":"INVENTORY",
+                "QUICKBOOKS_SANDBOX":"INVENTORY" ,
+                "MS_DYNAMICS_365":"INVENTORY"
+                },
+        "raw_data":{
+            "XERO":{
+                "inventory_asset_account_id":""
+            },
+            "QUICKBOOKS_SANDBOX":{
+                "inventory_asset_account_id":""
+            }
+        }
     },
-    "TAX_RATES": {"tax_type": {"ZOHO_BOOKS": "cgst"}},
-
+    "TAX_RATES": {
+        "tax_type": {
+            "ZOHO_BOOKS": "cgst",
+            "MS_DYNAMICS_365": "VAT",
+            },
+    },
+    "EXPENSES":{
+        "payment_mode":{
+            "QUICKBOOKS_SANDBOX":"CreditCard"
+        }
+    },
+    "INVOICE_CREDIT_NOTES":{
+        "raw_data":{
+            "SAGE_CLOUD_ACCOUNTING":{
+                "currency_rate":1
+            }
+        }
+    },
+    "BILL_CREDIT_NOTES":{
+        "raw_data":{
+            "SAGE_CLOUD_ACCOUNTING":{
+                "currency_rate":1
+            }
+        }
+    }
 }
 
 WRITE_BODIES = {
@@ -44,19 +86,32 @@ WRITE_BODIES = {
     "INVOICES": {
         "amount_due": 1,
         "document_number": fakeData.fakeDocumentNumber(),
-        "posted_date": "2023-01-01",
-        "due_date": "2023-02-01",
+        "posted_date": "2023-08-01",
+        "due_date": "2023-09-01",
         "currency_id": "",
+        "currency_rate":1,
         "memo": fakeData.fakeDescription(),
         "sales_order_ids": [],
         "contact_id": "",
         "line_items": "",
     },
+    "BILLS":{
+        "document_number":"",         
+         "posted_date": "2023-08-01",
+        "due_date": "2023-09-01",             
+        "currency_id":"",             
+        "amount_due":"",              
+        "currency_rate":1,           
+        "purchase_order_ids":[],      
+        "contact_id":"",              
+        "memo":"",                    
+        "line_items":""
+    },
     "LINE_ITEMS": [
         {
             "item_id": "",
             "tax_id": "",
-            "description": fakeData.fakeDescription(),
+            "description": fakeData.fakeDescription()[:40],
             "quantity": fakeData.fakeQuantity(),
             "unit_amount": fakeData.fakeAmount(),
             "account_id": "",
@@ -99,7 +154,7 @@ WRITE_BODIES = {
         "account_name": fakeData.fakeName(),
         "balance": fakeData.fakeAmount(),
         "currency_id": "",
-        "account_number": "",
+        "account_number": fakeData.fakeBankAccountNumber(),
         "category": "",
     },
     "BANK_TRANSACTIONS": {
@@ -118,6 +173,13 @@ WRITE_BODIES = {
         "currency_id": "",
         "tax_number": "ODSPS1279F",
         "registration_number": "07CEUPK5322M1XX",
+        "email":fakeData.fakeEmailAddress(),
+        "telephone":"4223874516",
+        "mobile":"9835261738",
+        "fax":fakeData.fakePhoneNumber(),
+        "website":fakeData.fakeWebsite(),
+        "contact_persons":"",
+        "addresses":""
     },
     "INVOICE_PAYMENTS": {
         "invoice_id": "",
@@ -150,6 +212,7 @@ WRITE_BODIES = {
         "memo": fakeData.fakeDescription(),
         "invoice_ids": "",
         "line_items": "",
+        "raw_data": ""
     },
     "BILL_CREDIT_NOTES": {
         "contact_id": "",
@@ -160,6 +223,7 @@ WRITE_BODIES = {
         "memo": fakeData.fakeDescription(),
         "bill_ids": "",
         "line_items": "",
+        "raw_data":""
     },
     "ITEMS": {
         "name": fakeData.fakeName(),
@@ -181,11 +245,19 @@ WRITE_BODIES = {
         "is_invoice_item":True,
         "type": "",
         "quantity_on_hand": fakeData.fakeQuantity(),
+        "raw_data": "",
     },
     "TAX_RATES": {
         "name": fakeData.fakeName(),
         "code": fakeData.fakeDocumentNumber(),
-        "components": "",
+        "components": [{
+            "name": fakeData.fakeName(),
+            "rate": fakeData.fakePercentage(),
+            "is_compound":False,
+            # these below should in raw_data?
+            "tax_agency": "1",
+            "tax_applicable_on": "Sales",
+        }],
         "effective_tax_rate": fakeData.fakePercentage(),
         "total_tax_rate": fakeData.fakePercentage(),
         "tax_type": "",
@@ -194,7 +266,7 @@ WRITE_BODIES = {
     "EXPENSES": {
         "document_number": fakeData.fakeDocumentNumber(),
         "currency_id": "",
-        "memo": fakeData.fakeDescription(),
+        "memo": str(fakeData.fakeDescription())[:40],
         "account_id": "",
         "payment_mode": "",
         "posted_date": fakeData.fakePostedDate(),
@@ -222,4 +294,23 @@ WRITE_BODIES = {
         "contact_id": "",
         "line_items": "",
     },
+    "ADDRESSES":[{
+        "type": "SHIPPING",
+        "street": fakeData.fakeStreet(),
+        "locality": fakeData.fakeLocality(),
+        "city": fakeData.fakeCity(),
+        "state": fakeData.fakeState(),
+        "country": "IN",
+        "pincode": fakeData.fakePincode(),
+    },
+    {
+        "type": "BILLING",
+        "street": fakeData.fakeStreet(),
+        "locality": fakeData.fakeLocality(),
+        "city": fakeData.fakeCity(),
+        "state": fakeData.fakeState(),
+        "country": "IN",
+        "pincode": fakeData.fakePincode(),
+    }
+    ]
 }

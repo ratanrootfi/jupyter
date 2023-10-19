@@ -1,6 +1,7 @@
 from writeBodies import *
 from datetime import datetime, timedelta
 
+
 VOUCHER_RELATED_DATAMODELS = {
     "INVOICE_PAYMENTS": "invoices",
     "INVOICE_CREDIT_NOTES": "invoices",
@@ -10,6 +11,8 @@ VOUCHER_RELATED_DATAMODELS = {
     "SALES_ORDERS": "invoices",
 }
 NESTED_DATA_FIELDS = ["line_items", "journal_lines"]
+
+KEYS_TO_NEVER_OMIT = ["contact_type","line_items","journal_lines"]
 
 def handleDates(key, voucher_data):
     if (key == "delivery_date" or key == "payment_date"):
@@ -25,7 +28,10 @@ def handleDates(key, voucher_data):
 
 def handleLines(company_id, writeBodies, supported_fields, platformIdClass, key):
     lines = []
+        
     for k in writeBodies["LINE_ITEMS" if key == "line_items" else "JOURNAL_LINES"]:
+        # if key == "line_items":
+        #     del k['account_id']
         tempLine = getRequestObject(
             company_id,
             k,
@@ -38,12 +44,15 @@ def handleLines(company_id, writeBodies, supported_fields, platformIdClass, key)
 
 def handleDefaultValues(config, platformIdClass, key,replaceIds,datamodel):
     # replace specific field values from default_datamodel_config in writeBodies.py
+    if platformIdClass.getIntegration() not in config[key].keys():
+        raise ValueError(f"integration not found in default_datamodel_config for {key} ❌")
+    
     default_value = config[key][platformIdClass.getIntegration()]
     if isinstance(default_value, dict):
         default_values_data = {}
         for each_key in default_value.keys():
             if "id" in each_key:
-                default_values_data[each_key] = replaceIds(datamodel,each_key,platformIdClass) # replace ids in nested fields rawdata, invoice item, bill item
+                default_values_data[each_key] = replaceIds(datamodel,each_key,platformIdClass,key) # replace ids in nested fields rawdata, invoice item, bill item
             else:
                 default_values_data[each_key] = default_value[each_key] # use default values default_datamodel_config in writeBodies.py
         default_value = default_values_data
@@ -69,7 +78,7 @@ def replaceIds(datamodel:str,column: str,platformIdClass,parent_field:str=None):
         return platformIdClass.getId("tax_rates",field)
     elif column == "item_id":
         return platformIdClass.getId("items",field)
-    elif column == "account_id":
+    elif column == "account_id" or "account_id" in column:
         return platformIdClass.getId("accounts",field)
     elif column == "from_account_id":
         return platformIdClass.getFromAccountId()
@@ -80,16 +89,16 @@ def replaceIds(datamodel:str,column: str,platformIdClass,parent_field:str=None):
 def getRequestObject(company_id, sampleData, supported_fields, platformIdClass, datamodel):
     requestObject = {}
     config = DEFAULT_DATAMODEL_CONFIG[datamodel] if datamodel in DEFAULT_DATAMODEL_CONFIG.keys() else {}
-    
     integration_supported_fields = supported_fields[datamodel.upper()][platformIdClass.getIntegration()]
+    if (len(integration_supported_fields) == 0):
+        return requestObject
     voucher_related_datamodels = VOUCHER_RELATED_DATAMODELS.keys()
     voucher_data = {}
 
     if datamodel in voucher_related_datamodels:
         voucher_data = platformIdClass.getVoucherRelatedDatamodelData(datamodel,VOUCHER_RELATED_DATAMODELS)
-
     for rootfi_field in sampleData.keys():
-        if rootfi_field not in integration_supported_fields:
+        if rootfi_field not in integration_supported_fields and rootfi_field not in KEYS_TO_NEVER_OMIT:
             continue
         if "_id" in rootfi_field:
             try:
@@ -110,7 +119,12 @@ def getRequestObject(company_id, sampleData, supported_fields, platformIdClass, 
         elif rootfi_field in list(config.keys()):
             requestObject[rootfi_field] = handleDefaultValues(config, platformIdClass, rootfi_field, replaceIds,datamodel)
         elif datamodel in voucher_related_datamodels and "_date" in rootfi_field:
-            requestObject[rootfi_field] = handleDates(rootfi_field, voucher_data)
+            if platformIdClass.getIntegration() == "QUICKBOOKS_SANDBOX": # TODO: change this 
+                requestObject[rootfi_field] = "2023-09-01"
+            else:
+                requestObject[rootfi_field] = handleDates(rootfi_field, voucher_data)
+        elif rootfi_field == "addresses":
+            requestObject[rootfi_field] = WRITE_BODIES["ADDRESSES"]
         else:
             # use faker fields
             requestObject[rootfi_field] = sampleData[rootfi_field]

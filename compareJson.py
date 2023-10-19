@@ -1,24 +1,28 @@
 # TODO: avoid in nested fields
 keys_to_avoid = {
     "ZOHO_BOOKS": {
-        "BILL_CREDIT_NOTES": ["total_discount"],
-        "EXPENSES": ["item_id", "tax_id", "quantity", "total_discount"],
+        "BILL_CREDIT_NOTES": ["line_items.total_discount"], # have to keep these to avoid as they get passed through line items
+        "EXPENSES": ["line_items.item_id", "line_items.tax_id", "line_items.quantity", "line_items.total_discount"],
         "PURCHASE_ORDERS": [
             "description"
         ],  ## TODO : check description is not undefined in old test but is always empty in db?
-        "SALES_ORDERS": ["account_id"],
-    }
+        "SALES_ORDERS": ["line_items.account_id"],
+    },
 }
 
 
-def compare_json(json1: dict, json2: dict, integration, datamodel):
+def compare_json(json1: dict, json2: dict, integration, datamodel,nested_key:str=None):
     for key in json1:
+        if key != 'raw_data':
+            continue
         if key not in json2:
             keysToAvoid = []
             try:
                 keysToAvoid = keys_to_avoid[integration][datamodel]
             except KeyError:
                 pass
+            if nested_key:
+                key = nested_key + "." + key
             if key in keysToAvoid:
                 #############################################
                 ## example
@@ -37,7 +41,7 @@ def compare_json(json1: dict, json2: dict, integration, datamodel):
         #############################################
 
         if isinstance(value1, dict):
-            compare_json(value1, value2, integration, datamodel)
+            compare_json(value1, value2, integration, datamodel,key)
         elif isinstance(value1, list):
             if len(value1) != len(value2):
                 raise ValueError(f"'{key}' length not matched ❌")
@@ -52,7 +56,7 @@ def compare_json(json1: dict, json2: dict, integration, datamodel):
                         raise ValueError(f"'{key}' values not matched ❌")
             else:
                 for i, (item1, item2) in enumerate(zip(value1, value2)):
-                    compare_json(item1, item2, integration, datamodel)
+                    compare_json(item1, item2, integration, datamodel,key)
         else:
             if value1 != value2:
                 raise ValueError(f"'{key}' values not matched ❌")

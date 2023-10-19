@@ -11,7 +11,7 @@ engine = sqlalchemy.create_engine("postgresql://postgres:RB9j2ZPOb0hiICMr6f7q@34
 
 def getCompanyId(org_id: int, integration: str):
     # Fetch company id
-    query = f"""SELECT rootfi_company_id from "Connections" WHERE integration_type = '{integration}' and rootfi_organisation_id = {org_id}"""
+    query = f"""SELECT rootfi_company_id from "Connections" WHERE integration_type = '{integration}' and rootfi_organisation_id = {org_id} and status = 'HEALTHY'"""
     df = pd.read_sql(query, engine)
     if len(df) == 0:
         return None
@@ -34,6 +34,9 @@ def runTestCase(run_for_datamodels, run_for_integrations, supported_fields, conf
 
             # get integration request body #
             requestData = getRequestObject(company_id, sampleBody, supported_fields, platformIdClass, datamodel)
+            if requestData == {}: # no supported fields
+                print(f"❌ No supported fields found for '{integration}': '{datamodel}'")
+                continue
             # request body
             requestBody = {"company_id": int(company_id), "data": [requestData]}
             # make rootfi api call #

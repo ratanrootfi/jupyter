@@ -3,7 +3,7 @@ from writeBodies import *
 from engine import *
 from writeBodies import DEFAULT_DATAMODEL_CONFIG
 from json import loads, dumps
-from platformIdFetchConditions import PLATFORM_ID_FETCH_CONDITIONS
+from platformIdFetchConditions import CUSTOM_TABLE_FETCH_CONDITIONS, PLATFORM_ID_FETCH_CONDITIONS
 
 #TODO: make supported for nested fields -- done
 # PLATFORM_ID_FETCH_CONDITIONS 
@@ -37,6 +37,10 @@ class GetPlatformId:
 
     def fetchData(self,fetch_from_table:str,condition:str):
         # makes the query, executes it and returns the platform id
+        # if self.getIntegration() == "SAGE_CLOUD_ACCOUNTING" and fetch_from_table == "accounts" and self.getDatamodel() in ["INVOICE_PAYMENTS", "BILL_PAYMENTS"]:
+        #     # to do make this dynamic
+        #     fetch_from_table = "bank_accounts"
+        
         query = f"""SELECT platform_id from {fetch_from_table} WHERE rootfi_company_id = {self.company_id} {condition} LIMIT 1"""
         return returnPlatformId(query)
 
@@ -47,6 +51,12 @@ class GetPlatformId:
         return returnPlatformId(query)
 
     def getId(self,fetch_from_table:str,field:str):
+
+        try:
+            fetch_from_table = CUSTOM_TABLE_FETCH_CONDITIONS[self.datamodel][field][self.integration]
+        except KeyError:
+            pass
+        print("field: ",field, "fetch_from_table: ",fetch_from_table)
         condition = self.generateConditionQuery(field)
         return self.fetchData(fetch_from_table,condition)
 
@@ -55,9 +65,12 @@ class GetPlatformId:
         return self.fetchData("accounts",condition)
 
     def getVoucherRelatedDatamodelData(self, datamodel: str,voucher_related_datamodels:dict):
-        query = f"SELECT {voucher_related_datamodels[datamodel]}.* from {voucher_related_datamodels[datamodel]} INNER JOIN contacts ON {voucher_related_datamodels[datamodel]}.contact_id = contacts.platform_id WHERE {voucher_related_datamodels[datamodel]}.rootfi_company_id = 39 and contacts.status = 'ACTIVE' {' and '+ voucher_related_datamodels[datamodel]+'.amount_due > 1' if datamodel in ['INVOICE_PAYMENTS', 'BILL_PAYMENTS'] else ''} LIMIT 1"
+        contacts_condition = " and contacts.status = 'ACTIVE'" if self.integration != "MS_DYNAMICS_365" else ""
+        query = f"SELECT {voucher_related_datamodels[datamodel]}.* from {voucher_related_datamodels[datamodel]} INNER JOIN contacts ON {voucher_related_datamodels[datamodel]}.contact_id = contacts.platform_id WHERE {voucher_related_datamodels[datamodel]}.rootfi_company_id = {self.company_id} {contacts_condition} {' and '+ voucher_related_datamodels[datamodel]+'.amount_due > 1' if datamodel in ['INVOICE_PAYMENTS', 'BILL_PAYMENTS'] else ''} LIMIT 1"
+        print("query", query)
         df_json = queryAndReturnDict(query)["0"]  # convert dataframe to json
         df_json[f"{voucher_related_datamodels[datamodel][:-1]}_id"] = df_json["platform_id"]  # add platform id as voucher id
+        print("voucher data", df_json)
         return df_json
 
 
