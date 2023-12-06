@@ -8,25 +8,59 @@ PLATFORM_ID_FETCH_CONDITIONS = {
     },
     "BILLS":{
         "contact_id":{
+            "ZOHO_BOOKS":{
+                "contact_type":"VENDOR"
+            },
+            "ROOTFI_SANDBOX":{
+                "contact_type":"VENDOR"
+            },
+            "XERO":{
+                "contact_type":"VENDOR"
+            },
+            "QUICKBOOKS_SANDBOX":{
+                "contact_type":"VENDOR"
+            },
             "SAGE_CLOUD_ACCOUNTING":{
                 "contact_type":"VENDOR"
             },
-            "MS_DYNAMICS_365":{
+            "WAFEQ":{
                 "contact_type":"VENDOR"
-            }
+            },
+            "NETSUITE":{
+                "contact_type":"VENDOR"
+            },
+            "ODOO_ACCOUNTING":{
+                "contact_type":"VENDOR"
+            },
         },
         "line_items.account_id": {
+            "ZOHO_BOOKS": {
+                "sub_category": "other_current_liability"
+            },
             "SAGE_CLOUD_ACCOUNTING":{
                 # "sub_category":"CURRENT_ASSETS",
                 "platform_id":"fea140d5917811eda8c40ef4cf562701" # TODO: figure out condition
             }
         },
         "line_items.tax_id": {
+            "ZOHO_BOOKS": {
+                # "raw_data ->> 'tax_type'": "tax_group"
+                "tax_type": "igst"
+            },
             "MS_DYNAMICS_365":{
                 # "tax_type":"VAT"
                 "platform_id":"STANDARD" # TODO: figure out condition
+            },
+            "ODOO_ACCOUNTING":{
+                "tax_type":"none"
             }
         },
+        "line_items.item_id": {
+            "ZOHO_BOOKS": {
+                "is_bill_item": "true",
+                "is_invoice_item": "true",
+            }
+        }
     },
     "INVOICES": {
         "currency_id": {
@@ -41,15 +75,25 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "SAGE_CLOUD_ACCOUNTING":{
                 "contact_type": "CUSTOMER"
+            },
+            "NETSUITE":{
+                "contact_type": "CUSTOMER"
             }
         },
         "line_items.tax_id": {
             "ZOHO_BOOKS": {
-                "raw_data ->> 'tax_type'": "tax_group"
+                # "raw_data ->> 'tax_type'": "tax_group"
+                "tax_type": "igst"
             },
             "MS_DYNAMICS_365":{
                 # "tax_type":"VAT"
                 "platform_id":"STANDARD" # TODO: figure out condition
+            },
+            "ODOO_ACCOUNTING":{
+                "tax_type":"none"
+            },
+            "SAGE_CLOUD_ACCOUNTING":{
+                "name":"No Tax"
             }
         },
         "line_items.account_id": {
@@ -61,6 +105,9 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "SAGE_CLOUD_ACCOUNTING":{
                 "sub_category":"SALES"
+            },
+            "ODOO_ACCOUNTING":{
+                "platform_id":"122"
             }
         },
         "line_items.tracking_category_ids":{
@@ -72,7 +119,7 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             "QUICKBOOKS_SANDBOX": {
                 "type":"INVENTORY"
             }
-        }
+        },
     },
     "BANK_ACCOUNTS": {
         "currency_id": {
@@ -85,15 +132,20 @@ PLATFORM_ID_FETCH_CONDITIONS = {
         },
     },
     "BANK_TRANSACTIONS": {
-        "account_id": {
+        "to_account_id": {
             "ZOHO_BOOKS": {
                 "sub_category": "bank"
             }
         },  # only for bank transactions type deposit 
-        "raw_data.from_account_id": {
+        "account_id": {
             "ZOHO_BOOKS": {
                 "sub_category": "cash"
-            },
+            }
+        },
+        "raw_data.from_account_id": {
+            # "ZOHO_BOOKS": {
+            #     "sub_category": "cash"
+            # },
             "XERO":{
                 "sub_category":"CURRLIAB"
             }
@@ -111,7 +163,10 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "SAGE_CLOUD_ACCOUNTING":{
                 "platform_id":"USD"
-            }
+            },
+             "ODOO_ACCOUNTING": {
+                "is_base_currency": "true"
+            },
         },
     },
     "INVOICE_PAYMENTS": {
@@ -121,6 +176,14 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "QUICKBOOKS_SANDBOX":{
                 "sub_category":"CashOnHand"
+            },
+            "ODOO_ACCOUNTING":{
+                "sub_category":"asset_receivable"
+            }
+        },
+        "raw_data.arr_account_id":{
+            "NETSUITE":{
+                "sub_category":"AcctRec"
             }
         }
     },
@@ -131,13 +194,17 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "QUICKBOOKS_SANDBOX":{
                 "sub_category":"CashOnHand"
+            },
+            "ODOO_ACCOUNTING":{
+                "sub_category":"asset_receivable"
             }
         }
     },
     "INVOICE_CREDIT_NOTES": {
         "line_items.tax_id": {
             "ZOHO_BOOKS": {
-                "tax_type": "igst"
+                # "tax_type": "igst",
+                "raw_data ->> 'tax_type'": "tax_group"
             },
             "MS_DYNAMICS_365":{
                 # "tax_type":"VAT"
@@ -195,6 +262,12 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "SAGE_CLOUD_ACCOUNTING":{
                 "platform_id":"fea140d5917811eda8c40ef4cf562701"  # TODO: figure out condition
+            },
+            "NETSUITE":{
+                "sub_category":"Expense"
+            },
+            "MEKARI_JURNAL":{
+                "sub_category":"Income"
             }
         }, 
         "invoice_item.account_id": {
@@ -209,6 +282,12 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "SAGE_CLOUD_ACCOUNTING":{
                 "sub_category":"SALES"
+            },
+            "NETSUITE":{
+                "sub_category":"Income"
+            },
+            "MEKARI_JURNAL":{
+                "sub_category":"Cost of Sales"
             }
         },
         "raw_data.inventory_asset_account_id":{
@@ -242,7 +321,11 @@ PLATFORM_ID_FETCH_CONDITIONS = {
                 "sub_category": "cost_of_goods_sold"
             },
             "QUICKBOOKS_SANDBOX":{
-                "sub_category":"CashOnHand"            }
+                "sub_category":"CashOnHand"            
+            },
+            "MEKARI_JURNAL":{
+                "sub_category":"Cost of Sales"
+            }
         },
          "account_id":{ # TODO: passing account id in line items, why again passing ti in the main body? check
             "ZOHO_BOOKS": {
@@ -257,6 +340,11 @@ PLATFORM_ID_FETCH_CONDITIONS = {
                 "type":"INVENTORY"
             }
         },
+        "raw_data.paid_through_account_id":{
+            "WAFEQ":{
+                "sub_category":"CURRENT_ASSET"
+            }
+        }
     },
     "PURCHASE_ORDERS": {
          "line_items.account_id":{
@@ -323,6 +411,18 @@ PLATFORM_ID_FETCH_CONDITIONS = {
             },
             "MS_DYNAMICS_365":{
                 "platform_id":"22f3d74d-c32f-ee11-bdfa-6045bdacd6c5" # TODO: figure out condition
+            }
+        }
+    },
+    "TAX_RATES":{
+        "raw_data.buy_tax_account_id":{
+            "MEKARI_JURNAL":{
+                "sub_category":"Other Current Assets"
+            }
+        },
+        "raw_data.sell_tax_account_id":{
+            "MEKARI_JURNAL":{
+                "sub_category":"Other Current Liabilities"
             }
         }
     }

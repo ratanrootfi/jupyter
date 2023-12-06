@@ -9,8 +9,13 @@ DEFAULT_DATAMODEL_CONFIG = {  # these are the default values we use for the writ
             "ROOTFI_SANDBOX": "long_term_liability",
             "XERO":"LIABILITY",
             "QUICKBOOKS_SANDBOX":"CreditCard",
+             "QUICKBOOKS":"CreditCard",
             "SAGE_CLOUD_ACCOUNTING":"CURRENT_LIABILITY",
-            "WAFEQ":"CURRENT_LIABILITY"
+            "WAFEQ":"CURRENT_LIABILITY",
+            "NETSUITE":"AcctPay",
+            "ODOO_ACCOUNTING":"liability_current",
+            "WAVE":"CREDIT_CARD",
+            "MEKARI_JURNAL":"Other Current Liabilities"
         }
     },
     "BANK_ACCOUNTS": {
@@ -23,19 +28,30 @@ DEFAULT_DATAMODEL_CONFIG = {  # these are the default values we use for the writ
     },
     "BANK_TRANSACTIONS": {
         "type": {"ZOHO_BOOKS": "deposit","XERO":"SPEND"},
-        "raw_data": {"ZOHO_BOOKS": {"from_account_id": ""},"XERO":{"from_account_id": ""}},
+        "raw_data": {
+            # "ZOHO_BOOKS": {"from_account_id": ""},
+            "XERO":{"from_account_id": ""},
+            "MEKARI_JURNAL":{"deposit_to_id":"75365574"}
+        },
     },
     "INVOICE_PAYMENTS": {
-        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC"},
+        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC","MEKARI_JURNAL":"Cash"},
+        "raw_data":{
+            "NETSUITE":{"arr_account_id":""}
+        }
     },
     "BILL_PAYMENTS": {
-        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC"},
+        "payment_mode": {"ZOHO_BOOKS": "cash","SAGE_CLOUD_ACCOUNTING":"ELECTRONIC","MEKARI_JURNAL":"Cash"},
     },
     "ITEMS": {
         "type": {"ZOHO_BOOKS": "INVENTORY",
                  "XERO":"INVENTORY",
                 "QUICKBOOKS_SANDBOX":"INVENTORY" ,
-                "MS_DYNAMICS_365":"INVENTORY"
+                "MS_DYNAMICS_365":"INVENTORY",
+                "NETSUITE":"SERVICE",
+                "ODOO_ACCOUNTING":"INVENTORY",
+                "WAVE":"INVENTORY" ,
+                "QUICKBOOKS":"INVENTORY"
                 },
         "raw_data":{
             "XERO":{
@@ -43,6 +59,12 @@ DEFAULT_DATAMODEL_CONFIG = {  # these are the default values we use for the writ
             },
             "QUICKBOOKS_SANDBOX":{
                 "inventory_asset_account_id":""
+            },
+            "QUICKBOOKS":{
+                "inventory_asset_account_id":""
+            },
+            "NETSUITE":{
+                "taxschedule":"1"
             }
         }
     },
@@ -50,11 +72,23 @@ DEFAULT_DATAMODEL_CONFIG = {  # these are the default values we use for the writ
         "tax_type": {
             "ZOHO_BOOKS": "cgst",
             "MS_DYNAMICS_365": "VAT",
-            },
+            "ODOO_ACCOUNTING":"sale"
+        },
+        "raw_data":{
+            "MEKARI_JURNAL":{"buy_tax_account_id":"","sell_tax_account_id":""}
+        }
     },
     "EXPENSES":{
         "payment_mode":{
-            "QUICKBOOKS_SANDBOX":"CreditCard"
+            "QUICKBOOKS_SANDBOX":"CreditCard",
+            "QUICKBOOKS":"CreditCard",
+            "MEKARI_JURNAL":"Cash"
+        },
+        "raw_data":{
+            "WAFEQ":{
+                "description":fakeData.fakeDescription(),
+                "paid_through_account_id":"acc_kdMKzKN59q26gzPQC9x478" 
+            }
         }
     },
     "INVOICE_CREDIT_NOTES":{
@@ -77,7 +111,7 @@ WRITE_BODIES = {
     "ACCOUNTS": {
         "nominal_code": fakeData.fakeDocumentNumber(),
         "name": fakeData.fakeName(),
-        "description": fakeData.fakeDescription(),
+        "description": fakeData.fakeDescription()[:30],
         "currency_id": "",
         "current_balance": fakeData.fakeAmount(),
         "sub_category": "",
@@ -85,6 +119,7 @@ WRITE_BODIES = {
     },
     "INVOICES": {
         "amount_due": 1,
+        "total_discount": 1,
         "document_number": fakeData.fakeDocumentNumber(),
         "posted_date": "2023-08-01",
         "due_date": "2023-09-01",
@@ -96,15 +131,15 @@ WRITE_BODIES = {
         "line_items": "",
     },
     "BILLS":{
-        "document_number":"",         
+        "document_number":fakeData.fakeDocumentNumber(),
          "posted_date": "2023-08-01",
         "due_date": "2023-09-01",             
         "currency_id":"",             
-        "amount_due":"",              
+        "amount_due":1,              
         "currency_rate":1,           
         "purchase_order_ids":[],      
         "contact_id":"",              
-        "memo":"",                    
+        "memo":fakeData.fakeDescription(),                    
         "line_items":""
     },
     "LINE_ITEMS": [
@@ -161,6 +196,7 @@ WRITE_BODIES = {
         "amount": fakeData.fakeAmount(),
         "type": "",
         "account_id": "",
+        "to_account_id":"",
         "currency_id": "",
         "transaction_date": fakeData.fakePostedDate(),
         "contact_id": "",
@@ -191,6 +227,7 @@ WRITE_BODIES = {
         "payment_date": fakeData.fakePostedDate(),
         "contact_id": "",
         "document_number": fakeData.fakeDocumentNumber(),
+        "raw_data":""
     },
     "BILL_PAYMENTS": {
         "bill_id": "",
@@ -261,6 +298,7 @@ WRITE_BODIES = {
         "effective_tax_rate": fakeData.fakePercentage(),
         "total_tax_rate": fakeData.fakePercentage(),
         "tax_type": "",
+        "raw_data":""
 
     },
     "EXPENSES": {
@@ -272,6 +310,7 @@ WRITE_BODIES = {
         "posted_date": fakeData.fakePostedDate(),
         "contact_id": "",
         "line_items": "",
+        "raw_data":""
     },
     "PURCHASE_ORDERS": {
         "description": "",
@@ -299,8 +338,8 @@ WRITE_BODIES = {
         "street": fakeData.fakeStreet(),
         "locality": fakeData.fakeLocality(),
         "city": fakeData.fakeCity(),
-        "state": fakeData.fakeState(),
-        "country": "IN",
+        "state": "US-AK",
+        "country": "US",
         "pincode": fakeData.fakePincode(),
     },
     {
@@ -308,8 +347,8 @@ WRITE_BODIES = {
         "street": fakeData.fakeStreet(),
         "locality": fakeData.fakeLocality(),
         "city": fakeData.fakeCity(),
-        "state": fakeData.fakeState(),
-        "country": "IN",
+        "state": "US-AK",
+        "country": "US",
         "pincode": fakeData.fakePincode(),
     }
     ]

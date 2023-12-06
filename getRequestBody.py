@@ -67,6 +67,8 @@ def replaceIds(datamodel:str,column: str,platformIdClass,parent_field:str=None):
     else:
         field = column
     if column == "currency_id":
+        if platformIdClass.getIntegration() in ["WAFEQ","NETSUITE"]:
+            return "INR" if platformIdClass.getIntegration() == "WAFEQ" else "1"
         return platformIdClass.getId("currencies",field)
     elif column == "parent_account_id":
         return platformIdClass.getParentAccountId()
@@ -85,6 +87,7 @@ def replaceIds(datamodel:str,column: str,platformIdClass,parent_field:str=None):
     elif column == "tracking_category_ids":
         tracking_category_id = platformIdClass.getId("tracking_categories",field)
         return [tracking_category_id] if tracking_category_id else []
+    
 
 def getRequestObject(company_id, sampleData, supported_fields, platformIdClass, datamodel):
     requestObject = {}
@@ -102,17 +105,28 @@ def getRequestObject(company_id, sampleData, supported_fields, platformIdClass, 
             continue
         if "_id" in rootfi_field:
             try:
+                if platformIdClass.getIntegration() == "NETSUITE" and rootfi_field == "currency_id":
+                    requestObject[rootfi_field] = "1"
+                    continue
                 idData = voucher_data[rootfi_field if "ids" not in rootfi_field else rootfi_field[:-1]]
                 requestObject[rootfi_field] = idData if "ids" not in rootfi_field else [idData]
             except KeyError:
-                requestObject[rootfi_field] = replaceIds(datamodel,rootfi_field,platformIdClass)
+                replaceValue = replaceIds(datamodel,rootfi_field,platformIdClass)
+                if replaceValue:
+                    requestObject[rootfi_field] = replaceValue
+                else:
+                    requestObject[rootfi_field] = sampleData[rootfi_field]
         elif rootfi_field == "line_items" or rootfi_field == "journal_lines":
             requestObject[rootfi_field] = handleLines(company_id, WRITE_BODIES, supported_fields, platformIdClass, rootfi_field)
         elif isinstance(sampleData[rootfi_field],dict): # invoice item, bill items
             item = {}
             for nested_field in sampleData[rootfi_field].keys():
                 if "_id" in nested_field:
-                    item[nested_field] = replaceIds(datamodel,nested_field,platformIdClass,rootfi_field)
+                    replaceValue = replaceIds(datamodel,nested_field,platformIdClass,rootfi_field)
+                    if replaceValue:
+                        item[nested_field] = replaceValue
+                    else:
+                        item[nested_field] = sampleData[rootfi_field][nested_field]
                 else:
                     item[nested_field] = sampleData[rootfi_field][nested_field]
             requestObject[rootfi_field] = item

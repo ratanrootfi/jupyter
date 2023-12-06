@@ -1,9 +1,10 @@
 import sqlalchemy
 import pandas as pd
 
-engine = sqlalchemy.create_engine(
-    'postgresql://postgres:RB9j2ZPOb0hiICMr6f7q@34.93.223.34/staging')
+# DATABASE_URL = "postgresql://postgres:RB9j2ZPOb0hiICMr6f7q@34.100.136.218/production_clone"
+DATABASE_URL = "postgresql://postgres:RB9j2ZPOb0hiICMr6f7q@35.244.45.226/dev_clone"
 
+engine = sqlalchemy.create_engine(DATABASE_URL)
 
 def returnPlatformId(query: str):
     df = pd.read_sql(query, engine)
